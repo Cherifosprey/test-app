@@ -41,6 +41,11 @@ def patch_sidebar() -> None:
         '<span className="font-bold text-white text-sm flex-1">{ERP_CONFIG.brand.name}</span>',
     )
 
+    company_link = "      { to: '/company-settings', label: 'Mon entreprise', icon: Building2 },"
+    if company_link not in text:
+        anchor = "      { to: '/performance',     label: 'Performance',      icon: BarChart2, module: 'performance' },"
+        text = text.replace(anchor, company_link + '\n' + anchor, 1)
+
     replacements = {
         "label: 'Operations'": "label: 'Opérations'",
         "label: 'Tasks'": "label: 'Tâches'",
@@ -119,10 +124,19 @@ def patch_frontend_router() -> None:
         anchor = "import PricingPage from '../pages/admin/PricingPage.jsx';"
         text = text.replace(anchor, anchor + "\nimport ERPPlansPage from '../pages/admin/ERPPlansPage.jsx';", 1)
 
+    if "CompanySettingsPage" not in text:
+        anchor = "import SettingsPage from '../pages/settings/SettingsPage.jsx';"
+        text = text.replace(anchor, anchor + "\nimport CompanySettingsPage from '../pages/settings/CompanySettingsPage.jsx';", 1)
+
     route = "      { path: 'erp-plans', element: <ERPPlansPage /> },"
     if route not in text:
         anchor = "      { path: 'pricing', element: <PricingPage /> },"
         text = text.replace(anchor, anchor + '\n' + route, 1)
+
+    company_route = "      { path: 'company-settings', element: <CompanySettingsPage /> },"
+    if company_route not in text:
+        anchor = "      { path: 'settings',       element: <SettingsPage /> },"
+        text = text.replace(anchor, anchor + '\n' + company_route, 1)
 
     path.write_text(text, encoding='utf-8')
     print(f'patched: {path.relative_to(ROOT)}')
@@ -144,13 +158,25 @@ def patch_backend_main() -> None:
         return
     text = path.read_text(encoding='utf-8')
 
-    if 'erp_admin' not in text:
-        text = text.replace(', public\nfrom .routers.users', ', public, erp_admin\nfrom .routers.users', 1)
+    schema_import = 'from .core.erp_schema import ensure_erp_schema'
+    if schema_import not in text:
+        anchor = 'from .core.config import settings'
+        text = text.replace(anchor, anchor + '\n' + schema_import, 1)
 
-    include = 'app.include_router(erp_admin.router,          prefix="/api")'
-    if include not in text:
+    if 'erp_admin' not in text or 'erp_company' not in text:
+        text = text.replace(', public\nfrom .routers.users', ', public, erp_admin, erp_company\nfrom .routers.users', 1)
+
+    if 'await ensure_erp_schema()' not in text:
+        text = text.replace('    await init_db()\n    yield', '    await init_db()\n    await ensure_erp_schema()\n    yield', 1)
+
+    admin_include = 'app.include_router(erp_admin.router,          prefix="/api")'
+    if admin_include not in text:
         anchor = 'app.include_router(admin_pricing.router,       prefix="/api")'
-        text = text.replace(anchor, anchor + '\n' + include, 1)
+        text = text.replace(anchor, anchor + '\n' + admin_include, 1)
+
+    company_include = 'app.include_router(erp_company.router,        prefix="/api")'
+    if company_include not in text:
+        text = text.replace(admin_include, admin_include + '\n' + company_include, 1)
 
     path.write_text(text, encoding='utf-8')
     print(f'patched: {path.relative_to(ROOT)}')
