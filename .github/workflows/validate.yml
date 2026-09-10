@@ -22,6 +22,7 @@ jobs:
           python -m py_compile scripts/apply_customizations.py
           python -m py_compile scripts/apply_supplier_finance.py
           python -m py_compile scripts/apply_multicountry.py
+          python -m py_compile scripts/apply_credits.py
           python -m json.tool custom/erp.config.json > /dev/null
           test -f overrides/frontend/index.html
           test -f overrides/frontend/src/config/erpConfig.js
@@ -32,6 +33,7 @@ jobs:
           test -f overrides/frontend/src/pages/purchases/PurchasesPage.jsx
           test -f overrides/frontend/src/pages/purchases/SupplierFinancePage.jsx
           test -f overrides/frontend/src/pages/payments/PaymentsPage.jsx
+          test -f overrides/frontend/src/pages/credits/CreditNotesPage.jsx
           test -f overrides/frontend/src/pages/invoicing/InvoiceFormPage.jsx
           test -f overrides/frontend/src/pages/invoicing/InvoiceDetailPage.jsx
           test -f overrides/frontend/src/pages/invoicing/InvoicePrintPage.jsx
@@ -45,6 +47,7 @@ jobs:
           test -f overrides/backend/app/routers/erp_purchases.py
           test -f overrides/backend/app/routers/erp_payments.py
           test -f overrides/backend/app/routers/erp_supplier_finance.py
+          test -f overrides/backend/app/routers/erp_credits.py
 
       - name: Clone SimpleSoft and apply ERP V1
         run: bash scripts/bootstrap.sh
@@ -59,6 +62,7 @@ jobs:
           python -m py_compile upstream/backend/app/routers/erp_purchases.py
           python -m py_compile upstream/backend/app/routers/erp_payments.py
           python -m py_compile upstream/backend/app/routers/erp_supplier_finance.py
+          python -m py_compile upstream/backend/app/routers/erp_credits.py
 
           check() {
             needle="$1"
@@ -75,14 +79,18 @@ jobs:
           check "erp_purchases.router" upstream/backend/app/main.py
           check "erp_payments.router" upstream/backend/app/main.py
           check "erp_supplier_finance.router" upstream/backend/app/main.py
+          check "erp_credits.router" upstream/backend/app/main.py
           check "path: 'purchases'" upstream/frontend/src/router/index.jsx
           check "PurchasesPage" upstream/frontend/src/router/index.jsx
           check "path: 'payments'" upstream/frontend/src/router/index.jsx
           check "PaymentsPage" upstream/frontend/src/router/index.jsx
+          check "path: 'credits'" upstream/frontend/src/router/index.jsx
+          check "CreditNotesPage" upstream/frontend/src/router/index.jsx
           check "path: 'supplier-finance'" upstream/frontend/src/router/index.jsx
           check "SupplierFinancePage" upstream/frontend/src/router/index.jsx
           check "module: 'purchases'" upstream/frontend/src/components/layout/Sidebar.jsx
           check "label: 'Paiements'" upstream/frontend/src/components/layout/Sidebar.jsx
+          check "label: 'Avoirs & remboursements'" upstream/frontend/src/components/layout/Sidebar.jsx
           check "label: 'Dettes fournisseurs'" upstream/frontend/src/components/layout/Sidebar.jsx
           check '"purchases"' upstream/backend/app/routers/admin_workspaces.py
           check "Fiscalité multi-pays" upstream/frontend/src/pages/settings/CompanySettingsPage.jsx
@@ -90,6 +98,7 @@ jobs:
           check "tax_name" upstream/frontend/src/pages/invoicing/InvoiceFormPage.jsx
           check "DEVIS" upstream/frontend/src/pages/quotations/QuotationPrintPage.jsx
           check "tax_name" upstream/frontend/src/pages/quotations/QuotationFormPage.jsx
+          check "credited_amount" upstream/backend/app/routers/erp_payments.py
           check "Navigate to=\"/company-settings\"" upstream/frontend/src/router/index.jsx
           if grep -Fq "to: '/gst'" upstream/frontend/src/components/layout/Sidebar.jsx; then
             echo "Legacy GST menu is still visible"
