@@ -5,12 +5,12 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
-from sqlalchemy import text
+from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..core.deps import get_current_user
 from ..database import get_db
-from ..models.user import User
+from ..models.user import User, Workspace
 
 router = APIRouter(prefix='/erp/purchases', tags=['ERP Purchases'])
 
@@ -43,6 +43,19 @@ class PurchaseStatusBody(BaseModel):
     status: str = Field(pattern='^(draft|ordered|received|cancelled)$')
 
 
+async def _require_purchases(current_user: User, db: AsyncSession) -> None:
+    result = await db.execute(
+        select(Workspace.enabled_modules).where(Workspace.id == current_user.workspace_id)
+    )
+    raw_modules = result.scalar_one_or_none() or '[]'
+    try:
+        modules = json.loads(raw_modules)
+    except (TypeError, json.JSONDecodeError):
+        modules = []
+    if 'purchases' not in modules:
+        raise HTTPException(403, 'Purchases module is not enabled for this workspace')
+
+
 def _serialize_line(line: PurchaseLine) -> dict:
     subtotal = line.quantity * line.unit_price
     tax_amount = subtotal * line.tax_rate / Decimal('100')
@@ -63,6 +76,7 @@ async def list_suppliers(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
+    await _require_purchases(current_user, db)
     result = await db.execute(
         text('''
             SELECT id, name, phone, email, address, tax_id, is_active, created_at
@@ -81,6 +95,7 @@ async def create_supplier(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
+    await _require_purchases(current_user, db)
     result = await db.execute(
         text('''
             INSERT INTO erp_suppliers (workspace_id, name, phone, email, address, tax_id)
@@ -98,6 +113,7 @@ async def list_purchase_orders(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
+    await _require_purchases(current_user, db)
     result = await db.execute(
         text('''
             SELECT po.id, po.po_number, po.order_date, po.status, po.currency,
@@ -127,6 +143,7 @@ async def create_purchase_order(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
+    await _require_purchases(current_user, db)
     supplier_result = await db.execute(
         text('SELECT id FROM erp_suppliers WHERE id = :id AND workspace_id = :workspace_id AND is_active = TRUE'),
         {'id': body.supplier_id, 'workspace_id': current_user.workspace_id},
@@ -186,6 +203,7 @@ async def update_purchase_order_status(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
+    await _require_purchases(current_user, db)
     result = await db.execute(
         text('''
             UPDATE erp_purchase_orders
