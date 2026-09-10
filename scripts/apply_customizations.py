@@ -22,19 +22,6 @@ def copy_tree(src: Path, dst: Path) -> None:
         print(f'override: {target.relative_to(ROOT)}')
 
 
-def patch_once(path: Path, old: str, new: str) -> None:
-    if not path.exists():
-        return
-    text = path.read_text(encoding='utf-8')
-    if new in text:
-        return
-    if old not in text:
-        print(f'warning: pattern not found in {path.relative_to(ROOT)}')
-        return
-    path.write_text(text.replace(old, new, 1), encoding='utf-8')
-    print(f'patched: {path.relative_to(ROOT)}')
-
-
 def patch_sidebar() -> None:
     path = UPSTREAM / 'frontend/src/components/layout/Sidebar.jsx'
     if not path.exists():
@@ -43,11 +30,18 @@ def patch_sidebar() -> None:
 
     if "../../config/erpConfig.js" not in text:
         anchor = "import Avatar from '../ui/Avatar.jsx';"
-        text = text.replace(anchor, anchor + "\nimport { ERP_CONFIG } from '../../config/erpConfig.js';")
+        text = text.replace(anchor, anchor + "\nimport { ERP_CONFIG } from '../../config/erpConfig.js';", 1)
+
+    text = text.replace(
+        '<span className="text-white text-xs font-bold">S</span>',
+        '<span className="text-white text-xs font-bold">{ERP_CONFIG.brand.shortName}</span>',
+    )
+    text = text.replace(
+        '<span className="font-bold text-white text-sm flex-1">SimpleSoft</span>',
+        '<span className="font-bold text-white text-sm flex-1">{ERP_CONFIG.brand.name}</span>',
+    )
 
     replacements = {
-        '>SimpleSoft</span>': '>{ERP_CONFIG.brand.name}</span>',
-        '>S</span>': '>{ERP_CONFIG.brand.shortName}</span>',
         "label: 'Operations'": "label: 'Opérations'",
         "label: 'Tasks'": "label: 'Tâches'",
         "label: 'Projects'": "label: 'Projets'",
@@ -68,10 +62,8 @@ def patch_sidebar() -> None:
         "label: 'Attendance'": "label: 'Présences'",
         "label: 'Leaves'": "label: 'Congés'",
         "label: 'Payroll'": "label: 'Paie'",
-        "label: 'Performance'": "label: 'Performance'",
         "label: 'Automation'": "label: 'Automatisation'",
         "label: 'Help Desk'": "label: 'SAV / Support'",
-        "label: 'Tickets'": "label: 'Tickets'",
         "'Plans & Modules'": "'Offres & Modules'",
         "'Help & Support'": "'Aide & Support'",
         "'Settings'": "'Paramètres'",
@@ -100,7 +92,7 @@ def patch_backend_main() -> None:
         return
     text = path.read_text(encoding='utf-8')
 
-    if 'erp_admin' not in text.split('\n')[5]:
+    if 'erp_admin' not in text:
         text = text.replace(', public\nfrom .routers.users', ', public, erp_admin\nfrom .routers.users', 1)
 
     include = 'app.include_router(erp_admin.router,          prefix="/api")'
