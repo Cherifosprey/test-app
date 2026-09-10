@@ -30,7 +30,9 @@
 - [x] paiements clients avec historique, règlements partiels et solde
 - [x] modes Espèces / Virement / Mobile Money / Carte / Chèque / Autre
 - [x] écriture comptable automatique des règlements clients
-- [ ] avoirs et remboursements
+- [x] avoirs avec annulation proportionnelle ventes + taxes
+- [x] remboursements partiels/complets limités aux montants réellement encaissés
+- [x] solde client tenant compte automatiquement des avoirs
 
 ## Phase 3 — Afrique francophone / multi-pays
 
