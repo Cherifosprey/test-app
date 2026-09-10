@@ -1,3 +1,10 @@
+const ALL_MODULES = [
+  'projects', 'tasks', 'notes', 'contacts', 'chat', 'files',
+  'team', 'invoices', 'quotations', 'accounting', 'products',
+  'calendar', 'hr', 'attendance', 'crm', 'sales', 'expenses',
+  'inventory', 'performance', 'automation', 'helpdesk',
+];
+
 export const ERP_CONFIG = {
   brand: {
     name: import.meta.env.VITE_ERP_NAME || 'ERP Suite',
@@ -9,7 +16,8 @@ export const ERP_CONFIG = {
   plans: {
     starter: ['projects', 'tasks', 'contacts', 'crm', 'quotations', 'sales', 'invoices'],
     business: ['projects', 'tasks', 'contacts', 'crm', 'quotations', 'sales', 'invoices', 'products', 'inventory', 'expenses', 'accounting'],
-    pro: ['projects', 'tasks', 'notes', 'contacts', 'chat', 'files', 'crm', 'quotations', 'sales', 'invoices', 'products', 'inventory', 'expenses', 'accounting', 'calendar', 'hr', 'attendance', 'performance', 'automation', 'helpdesk'],
+    pro: ['projects', 'tasks', 'notes', 'contacts', 'chat', 'files', 'team', 'crm', 'quotations', 'sales', 'invoices', 'products', 'inventory', 'expenses', 'accounting', 'calendar', 'hr', 'attendance', 'performance', 'automation', 'helpdesk'],
+    enterprise: ALL_MODULES,
   },
 };
 
