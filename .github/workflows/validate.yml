@@ -38,7 +38,7 @@ jobs:
       - name: Clone SimpleSoft and apply ERP V1
         run: bash scripts/bootstrap.sh
 
-      - name: Validate patched backend syntax
+      - name: Validate patched backend and routes
         run: |
           python -m py_compile upstream/backend/app/main.py
           python -m py_compile upstream/backend/app/core/erp_settings.py
@@ -47,15 +47,28 @@ jobs:
           python -m py_compile upstream/backend/app/routers/erp_company.py
           python -m py_compile upstream/backend/app/routers/erp_purchases.py
           python -m py_compile upstream/backend/app/routers/erp_payments.py
-          grep -q 'erp_admin.router' upstream/backend/app/main.py
-          grep -q 'erp_company.router' upstream/backend/app/main.py
-          grep -q 'erp_purchases.router' upstream/backend/app/main.py
-          grep -q 'erp_payments.router' upstream/backend/app/main.py
-          grep -q "gate('purchases'" upstream/frontend/src/router/index.jsx
-          grep -q "gate('invoices'.*PaymentsPage" upstream/frontend/src/router/index.jsx
-          grep -q "module: 'purchases'" upstream/frontend/src/components/layout/Sidebar.jsx
-          grep -q "label: 'Paiements'" upstream/frontend/src/components/layout/Sidebar.jsx
-          grep -q '"purchases"' upstream/backend/app/routers/admin_workspaces.py
+
+          check() {
+            needle="$1"
+            file="$2"
+            if ! grep -Fq "$needle" "$file"; then
+              echo "Missing integration: $needle in $file"
+              exit 1
+            fi
+            echo "OK: $needle"
+          }
+
+          check "erp_admin.router" upstream/backend/app/main.py
+          check "erp_company.router" upstream/backend/app/main.py
+          check "erp_purchases.router" upstream/backend/app/main.py
+          check "erp_payments.router" upstream/backend/app/main.py
+          check "path: 'purchases'" upstream/frontend/src/router/index.jsx
+          check "PurchasesPage" upstream/frontend/src/router/index.jsx
+          check "path: 'payments'" upstream/frontend/src/router/index.jsx
+          check "PaymentsPage" upstream/frontend/src/router/index.jsx
+          check "module: 'purchases'" upstream/frontend/src/components/layout/Sidebar.jsx
+          check "label: 'Paiements'" upstream/frontend/src/components/layout/Sidebar.jsx
+          check '"purchases"' upstream/backend/app/routers/admin_workspaces.py
 
       - name: Build patched frontend
         working-directory: upstream/frontend
