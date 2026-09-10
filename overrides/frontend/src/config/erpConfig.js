@@ -1,6 +1,6 @@
 const ALL_MODULES = [
   'projects', 'tasks', 'notes', 'contacts', 'chat', 'files',
-  'team', 'invoices', 'quotations', 'accounting', 'products',
+  'team', 'invoices', 'quotations', 'accounting', 'products', 'purchases',
   'calendar', 'hr', 'attendance', 'crm', 'sales', 'expenses',
   'inventory', 'performance', 'automation', 'helpdesk',
 ];
@@ -15,8 +15,8 @@ export const ERP_CONFIG = {
   currencies: ['XOF', 'EUR', 'USD'],
   plans: {
     starter: ['projects', 'tasks', 'contacts', 'crm', 'quotations', 'sales', 'invoices'],
-    business: ['projects', 'tasks', 'contacts', 'crm', 'quotations', 'sales', 'invoices', 'products', 'inventory', 'expenses', 'accounting'],
-    pro: ['projects', 'tasks', 'notes', 'contacts', 'chat', 'files', 'team', 'crm', 'quotations', 'sales', 'invoices', 'products', 'inventory', 'expenses', 'accounting', 'calendar', 'hr', 'attendance', 'performance', 'automation', 'helpdesk'],
+    business: ['projects', 'tasks', 'contacts', 'crm', 'quotations', 'sales', 'invoices', 'products', 'purchases', 'inventory', 'expenses', 'accounting'],
+    pro: ['projects', 'tasks', 'notes', 'contacts', 'chat', 'files', 'team', 'crm', 'quotations', 'sales', 'invoices', 'products', 'purchases', 'inventory', 'expenses', 'accounting', 'calendar', 'hr', 'attendance', 'performance', 'automation', 'helpdesk'],
     enterprise: ALL_MODULES,
   },
 };
@@ -33,6 +33,7 @@ export const MODULE_LABELS_FR = {
   quotations: 'Devis',
   accounting: 'Comptabilité',
   products: 'Produits',
+  purchases: 'Achats & Fournisseurs',
   calendar: 'Calendrier',
   hr: 'Ressources humaines',
   attendance: 'Présences',
