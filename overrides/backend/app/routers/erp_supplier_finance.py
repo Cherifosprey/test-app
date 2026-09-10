@@ -195,7 +195,8 @@ async def list_supplier_payments(
         text('''
             SELECT sp.id, sp.payment_date, sp.amount, sp.method, sp.reference,
                    sp.notes, sp.created_at, si.id AS supplier_invoice_id,
-                   si.invoice_number, s.id AS supplier_id, s.name AS supplier_name
+                   si.invoice_number, si.currency,
+                   s.id AS supplier_id, s.name AS supplier_name
             FROM erp_supplier_payments sp
             JOIN erp_supplier_invoices si ON si.id = sp.supplier_invoice_id
             JOIN erp_suppliers s ON s.id = si.supplier_id
@@ -223,7 +224,7 @@ async def record_supplier_payment(
 
     invoice_result = await db.execute(
         text('''
-            SELECT si.id, si.invoice_number, si.total_amount, si.status,
+            SELECT si.id, si.invoice_number, si.total_amount, si.status, si.currency,
                    si.supplier_id, s.name AS supplier_name
             FROM erp_supplier_invoices si
             JOIN erp_suppliers s ON s.id = si.supplier_id
@@ -323,6 +324,7 @@ async def record_supplier_payment(
         'supplier_invoice_id': invoice_id,
         'invoice_number': invoice['invoice_number'],
         'supplier_name': invoice['supplier_name'],
+        'currency': invoice['currency'],
         'invoice_total': total,
         'paid_amount': new_paid,
         'balance': remaining,
