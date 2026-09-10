@@ -27,11 +27,13 @@ jobs:
           test -f overrides/frontend/src/pages/admin/ERPPlansPage.jsx
           test -f overrides/frontend/src/pages/settings/CompanySettingsPage.jsx
           test -f overrides/frontend/src/pages/purchases/PurchasesPage.jsx
+          test -f overrides/frontend/src/pages/payments/PaymentsPage.jsx
           test -f overrides/backend/app/core/erp_settings.py
           test -f overrides/backend/app/core/erp_schema.py
           test -f overrides/backend/app/routers/erp_admin.py
           test -f overrides/backend/app/routers/erp_company.py
           test -f overrides/backend/app/routers/erp_purchases.py
+          test -f overrides/backend/app/routers/erp_payments.py
 
       - name: Clone SimpleSoft and apply ERP V1
         run: bash scripts/bootstrap.sh
@@ -44,11 +46,15 @@ jobs:
           python -m py_compile upstream/backend/app/routers/erp_admin.py
           python -m py_compile upstream/backend/app/routers/erp_company.py
           python -m py_compile upstream/backend/app/routers/erp_purchases.py
+          python -m py_compile upstream/backend/app/routers/erp_payments.py
           grep -q 'erp_admin.router' upstream/backend/app/main.py
           grep -q 'erp_company.router' upstream/backend/app/main.py
           grep -q 'erp_purchases.router' upstream/backend/app/main.py
+          grep -q 'erp_payments.router' upstream/backend/app/main.py
           grep -q "gate('purchases'" upstream/frontend/src/router/index.jsx
+          grep -q "gate('invoices'.*PaymentsPage" upstream/frontend/src/router/index.jsx
           grep -q "module: 'purchases'" upstream/frontend/src/components/layout/Sidebar.jsx
+          grep -q "label: 'Paiements'" upstream/frontend/src/components/layout/Sidebar.jsx
           grep -q '"purchases"' upstream/backend/app/routers/admin_workspaces.py
 
       - name: Build patched frontend
