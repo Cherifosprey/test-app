@@ -3,7 +3,7 @@ CORE_MODULES = [
 ]
 
 PAID_MODULES = [
-    'team', 'invoices', 'quotations', 'accounting', 'products',
+    'team', 'invoices', 'quotations', 'accounting', 'products', 'purchases',
     'calendar', 'hr', 'attendance', 'crm', 'sales', 'expenses',
     'inventory', 'performance', 'automation', 'helpdesk',
 ]
@@ -18,11 +18,11 @@ PLAN_MODULES = {
     'business': [
         'projects', 'tasks', 'contacts',
         'crm', 'quotations', 'sales', 'invoices',
-        'products', 'inventory', 'expenses', 'accounting',
+        'products', 'purchases', 'inventory', 'expenses', 'accounting',
     ],
     'pro': [
         'projects', 'tasks', 'notes', 'contacts', 'chat', 'files',
-        'team', 'invoices', 'quotations', 'accounting', 'products',
+        'team', 'invoices', 'quotations', 'accounting', 'products', 'purchases',
         'calendar', 'hr', 'attendance', 'crm', 'sales', 'expenses',
         'inventory', 'performance', 'automation', 'helpdesk',
     ],
