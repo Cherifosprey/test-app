@@ -41,6 +41,14 @@ async def _require_invoices(current_user: User, db: AsyncSession) -> None:
         raise HTTPException(403, 'Invoices module is not enabled for this workspace')
 
 
+async def _credited_amount(invoice_id: int, workspace_id: int, db: AsyncSession) -> Decimal:
+    result = await db.execute(
+        text('SELECT COALESCE(SUM(amount), 0) FROM erp_credit_notes WHERE invoice_id = :invoice_id AND workspace_id = :workspace_id'),
+        {'invoice_id': invoice_id, 'workspace_id': workspace_id},
+    )
+    return Decimal(str(result.scalar_one() or 0))
+
+
 @router.get('/receivables')
 async def list_receivables(
     current_user: User = Depends(get_current_user),
@@ -51,14 +59,33 @@ async def list_receivables(
         text('''
             SELECT i.id, i.invoice_number, i.customer_name, i.invoice_date, i.due_date,
                    i.status, i.total,
-                   CASE WHEN i.status = 'paid' THEN i.total ELSE COALESCE(SUM(p.amount), 0) END AS paid_amount,
-                   GREATEST(i.total - CASE WHEN i.status = 'paid' THEN i.total ELSE COALESCE(SUM(p.amount), 0) END, 0) AS balance
+                   CASE
+                     WHEN i.status = 'paid' AND COALESCE(p.paid_amount, 0) = 0 THEN i.total
+                     ELSE COALESCE(p.paid_amount, 0)
+                   END AS paid_amount,
+                   COALESCE(c.credited_amount, 0) AS credited_amount,
+                   GREATEST(
+                     i.total
+                     - CASE
+                         WHEN i.status = 'paid' AND COALESCE(p.paid_amount, 0) = 0 THEN i.total
+                         ELSE COALESCE(p.paid_amount, 0)
+                       END
+                     - COALESCE(c.credited_amount, 0),
+                     0
+                   ) AS balance
             FROM invoices i
-            LEFT JOIN erp_invoice_payments p
-              ON p.invoice_id = i.id AND p.workspace_id = i.workspace_id
+            LEFT JOIN (
+                SELECT workspace_id, invoice_id, SUM(amount) AS paid_amount
+                FROM erp_invoice_payments
+                GROUP BY workspace_id, invoice_id
+            ) p ON p.invoice_id = i.id AND p.workspace_id = i.workspace_id
+            LEFT JOIN (
+                SELECT workspace_id, invoice_id, SUM(amount) AS credited_amount
+                FROM erp_credit_notes
+                GROUP BY workspace_id, invoice_id
+            ) c ON c.invoice_id = i.id AND c.workspace_id = i.workspace_id
             WHERE i.workspace_id = :workspace_id
               AND i.status IN ('sent', 'overdue', 'partial', 'paid')
-            GROUP BY i.id
             ORDER BY i.created_at DESC
         '''),
         {'workspace_id': current_user.workspace_id},
@@ -117,13 +144,15 @@ async def invoice_payment_history(
     total = Decimal(str(invoice.total or 0))
     if invoice.status == 'paid' and paid == 0:
         paid = total
+    credited = await _credited_amount(invoice_id, current_user.workspace_id, db)
     return {
         'invoice_id': invoice.id,
         'invoice_number': invoice.invoice_number,
         'customer_name': invoice.customer_name,
         'total': total,
-        'paid_amount': min(paid, total),
-        'balance': max(total - paid, Decimal('0')),
+        'paid_amount': paid,
+        'credited_amount': credited,
+        'balance': max(total - paid - credited, Decimal('0')),
         'payments': payments,
     }
 
@@ -139,7 +168,6 @@ async def record_invoice_payment(
     if body.method not in PAYMENT_METHODS:
         raise HTTPException(400, f'Unsupported payment method: {body.method}')
 
-    # Seed before locking the invoice because the seed helper may commit.
     await seed_accounts_if_empty(current_user.workspace_id, db)
 
     invoice_result = await db.execute(
@@ -163,10 +191,11 @@ async def record_invoice_payment(
         {'invoice_id': invoice_id, 'workspace_id': current_user.workspace_id},
     )
     already_paid = Decimal(str(paid_result.scalar_one() or 0))
+    credited = await _credited_amount(invoice_id, current_user.workspace_id, db)
     invoice_total = Decimal(str(invoice.total or 0))
-    balance = invoice_total - already_paid
+    balance = invoice_total - already_paid - credited
     if balance <= 0:
-        raise HTTPException(409, 'Invoice is already fully paid')
+        raise HTTPException(409, 'Invoice is already settled by payments and/or credit notes')
     if body.amount > balance:
         raise HTTPException(400, f'Payment exceeds remaining balance ({balance})')
 
@@ -222,7 +251,7 @@ async def record_invoice_payment(
         db.add(entry)
 
     new_paid = already_paid + body.amount
-    remaining = max(invoice_total - new_paid, Decimal('0'))
+    remaining = max(invoice_total - new_paid - credited, Decimal('0'))
     invoice.status = 'paid' if remaining == 0 else 'partial'
 
     await db.commit()
@@ -232,6 +261,7 @@ async def record_invoice_payment(
         'invoice_number': invoice.invoice_number,
         'invoice_total': invoice_total,
         'paid_amount': new_paid,
+        'credited_amount': credited,
         'balance': remaining,
         'invoice_status': invoice.status,
     }
