@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS erp_company_profiles (
     legal_name VARCHAR(255),
     trade_name VARCHAR(255),
     country VARCHAR(128),
+    locale VARCHAR(16) NOT NULL DEFAULT 'fr-FR',
     currency VARCHAR(8) NOT NULL DEFAULT 'XOF',
     phone VARCHAR(64),
     email VARCHAR(255),
@@ -16,8 +17,13 @@ CREATE TABLE IF NOT EXISTS erp_company_profiles (
     ifu VARCHAR(128),
     nif VARCHAR(128),
     tax_id VARCHAR(128),
+    tax_name VARCHAR(32) NOT NULL DEFAULT 'TVA',
+    tax_registration_label VARCHAR(64) NOT NULL DEFAULT 'Identifiant fiscal',
     default_tax_rate NUMERIC(7,3) DEFAULT 0,
+    prices_include_tax BOOLEAN NOT NULL DEFAULT FALSE,
+    tax_exemption_note TEXT,
     invoice_prefix VARCHAR(32) DEFAULT 'FAC',
+    invoice_footer TEXT,
     logo_url TEXT,
     signature_url TEXT,
     stamp_url TEXT,
@@ -127,6 +133,12 @@ CREATE_INDEXES = [
 
 ERP_SCHEMA_UPGRADES = [
     "ALTER TABLE erp_purchase_orders ADD COLUMN IF NOT EXISTS stock_received BOOLEAN NOT NULL DEFAULT FALSE",
+    "ALTER TABLE erp_company_profiles ADD COLUMN IF NOT EXISTS locale VARCHAR(16) NOT NULL DEFAULT 'fr-FR'",
+    "ALTER TABLE erp_company_profiles ADD COLUMN IF NOT EXISTS tax_name VARCHAR(32) NOT NULL DEFAULT 'TVA'",
+    "ALTER TABLE erp_company_profiles ADD COLUMN IF NOT EXISTS tax_registration_label VARCHAR(64) NOT NULL DEFAULT 'Identifiant fiscal'",
+    "ALTER TABLE erp_company_profiles ADD COLUMN IF NOT EXISTS prices_include_tax BOOLEAN NOT NULL DEFAULT FALSE",
+    "ALTER TABLE erp_company_profiles ADD COLUMN IF NOT EXISTS tax_exemption_note TEXT",
+    "ALTER TABLE erp_company_profiles ADD COLUMN IF NOT EXISTS invoice_footer TEXT",
 ]
 
 
