@@ -1,0 +1,30 @@
+{
+  "brand": {
+    "name": "Mon ERP",
+    "defaultLocale": "fr",
+    "defaultCurrency": "XOF",
+    "supportedCurrencies": ["XOF", "EUR", "USD"]
+  },
+  "plans": {
+    "starter": ["crm", "sales", "invoicing"],
+    "business": ["crm", "sales", "purchases", "inventory", "invoicing", "finance"],
+    "pro": ["crm", "sales", "purchases", "inventory", "invoicing", "finance", "hr", "projects", "helpdesk"],
+    "enterprise": ["*"]
+  },
+  "companyFields": [
+    "name",
+    "logo",
+    "phone",
+    "email",
+    "address",
+    "country",
+    "rccm",
+    "ifu",
+    "nif",
+    "currency",
+    "taxRate",
+    "invoicePrefix",
+    "signature",
+    "stamp"
+  ]
+}
