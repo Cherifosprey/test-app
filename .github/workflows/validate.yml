@@ -1,0 +1,24 @@
+name: Validate ERP customization
+
+on:
+  push:
+    branches: [erp-v1]
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate Python customization script
+        run: python -m py_compile scripts/apply_customizations.py
+      - name: Validate ERP JSON configuration
+        run: python -m json.tool custom/erp.config.json > /dev/null
+      - name: Check required V1 files
+        run: |
+          test -f overrides/frontend/src/config/erpConfig.js
+          test -f overrides/frontend/src/utils/currency.js
+          test -f overrides/frontend/src/components/PaywallOverlay.jsx
+          test -f overrides/backend/app/core/erp_settings.py
+          test -f overrides/backend/app/routers/erp_admin.py
