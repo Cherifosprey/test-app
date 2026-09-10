@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Building2, Save } from 'lucide-react';
+import { Building2, ImagePlus, Save, Trash2 } from 'lucide-react';
 import api from '../../api/client.js';
 
 const EMPTY = {
@@ -15,31 +15,59 @@ export default function CompanySettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [uploading, setUploading] = useState('');
+  const [error, setError] = useState('');
 
   useEffect(() => {
     api.get('/erp/company-profile')
       .then(r => setForm({ ...EMPTY, ...(r.data || {}) }))
+      .catch(err => setError(err?.response?.data?.detail || 'Impossible de charger la fiche entreprise.'))
       .finally(() => setLoading(false));
   }, []);
 
   const set = key => e => setForm(prev => ({ ...prev, [key]: e.target.value }));
   const setBool = key => e => setForm(prev => ({ ...prev, [key]: e.target.checked }));
+  const payload = source => ({ ...source, default_tax_rate: Number(source.default_tax_rate || 0) });
 
   const save = async e => {
-    e.preventDefault();
+    e?.preventDefault();
     setSaving(true);
     setSaved(false);
+    setError('');
     try {
-      await api.patch('/erp/company-profile', {
-        ...form,
-        default_tax_rate: Number(form.default_tax_rate || 0),
-      });
+      await api.patch('/erp/company-profile', payload(form));
       setSaved(true);
       setTimeout(() => setSaved(false), 2500);
+    } catch (err) {
+      setError(err?.response?.data?.detail || 'Impossible d’enregistrer les paramètres.');
     } finally {
       setSaving(false);
     }
   };
+
+  const uploadAsset = async (key, file) => {
+    if (!file) return;
+    setUploading(key);
+    setError('');
+    try {
+      const body = new FormData();
+      body.append('file', file);
+      const { data } = await api.post('/media/upload?category=documents', body, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      const next = { ...form, [key]: data.url };
+      setForm(next);
+      await api.patch('/erp/company-profile', payload(next));
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2500);
+    } catch (err) {
+      setError(err?.response?.data?.detail || 'Échec de l’upload. Utilisez une image JPG, PNG ou WebP valide.');
+    } finally {
+      setUploading('');
+    }
+  };
+
+  const clearAsset = key => setForm(prev => ({ ...prev, [key]: '' }));
 
   if (loading) return <div className="p-8 text-sm text-gray-500">Chargement…</div>;
 
@@ -52,6 +80,8 @@ export default function CompanySettingsPage() {
         </div>
         <p className="mt-1 text-sm text-gray-500">Informations utilisées sur les devis, factures, achats et documents de l’ERP.</p>
       </div>
+
+      {error && <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>}
 
       <section className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5">
         <h2 className="font-semibold text-gray-900 dark:text-white">Identité</h2>
@@ -97,18 +127,19 @@ export default function CompanySettingsPage() {
       </section>
 
       <section className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5">
-        <h2 className="font-semibold text-gray-900 dark:text-white">Personnalisation des documents</h2>
-        <p className="mt-1 text-xs text-gray-500">Les uploads directs seront branchés ensuite. Pour cette V1, ces champs acceptent des URL.</p>
+        <h2 className="font-semibold text-gray-900 dark:text-white">Identité visuelle des documents</h2>
+        <p className="mt-1 text-xs text-gray-500">Importez directement les images utilisées sur les devis et factures. Elles sont isolées dans l’espace de l’entreprise.</p>
         <div className="mt-4 grid gap-4 md:grid-cols-3">
-          <Field label="URL du logo" value={form.logo_url} onChange={set('logo_url')} />
-          <Field label="URL de la signature" value={form.signature_url} onChange={set('signature_url')} />
-          <Field label="URL du cachet" value={form.stamp_url} onChange={set('stamp_url')} />
+          <AssetUpload label="Logo" value={form.logo_url} uploading={uploading === 'logo_url'} onFile={file => uploadAsset('logo_url', file)} onClear={() => clearAsset('logo_url')} />
+          <AssetUpload label="Signature" value={form.signature_url} uploading={uploading === 'signature_url'} onFile={file => uploadAsset('signature_url', file)} onClear={() => clearAsset('signature_url')} />
+          <AssetUpload label="Cachet" value={form.stamp_url} uploading={uploading === 'stamp_url'} onFile={file => uploadAsset('stamp_url', file)} onClear={() => clearAsset('stamp_url')} />
         </div>
+        <details className="mt-4 text-xs text-gray-500"><summary className="cursor-pointer font-medium">Utiliser une URL manuelle</summary><div className="mt-3 grid gap-4 md:grid-cols-3"><Field label="URL du logo" value={form.logo_url} onChange={set('logo_url')} /><Field label="URL de la signature" value={form.signature_url} onChange={set('signature_url')} /><Field label="URL du cachet" value={form.stamp_url} onChange={set('stamp_url')} /></div></details>
       </section>
 
       <div className="flex items-center justify-end gap-3">
         {saved && <span className="text-sm font-medium text-emerald-600">Enregistré</span>}
-        <button type="submit" disabled={saving} className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50">
+        <button type="submit" disabled={saving || !!uploading} className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50">
           <Save size={16} /> {saving ? 'Enregistrement…' : 'Enregistrer'}
         </button>
       </div>
@@ -116,31 +147,30 @@ export default function CompanySettingsPage() {
   );
 }
 
+function AssetUpload({ label, value, uploading, onFile, onClear }) {
+  return (
+    <div className="rounded-xl border border-dashed border-gray-300 p-3 dark:border-gray-700">
+      <p className="text-sm font-medium text-gray-700 dark:text-gray-300">{label}</p>
+      <div className="mt-2 flex h-28 items-center justify-center overflow-hidden rounded-lg bg-gray-50 dark:bg-gray-800/60">
+        {value ? <img src={value} alt={label} className="max-h-24 max-w-full object-contain" /> : <ImagePlus size={30} className="text-gray-300" />}
+      </div>
+      <div className="mt-3 flex gap-2">
+        <label className="flex-1 cursor-pointer rounded-lg bg-primary/10 px-3 py-2 text-center text-xs font-semibold text-primary hover:bg-primary/15">
+          {uploading ? 'Upload…' : value ? 'Remplacer' : 'Choisir une image'}
+          <input type="file" accept="image/png,image/jpeg,image/webp" disabled={uploading} className="hidden" onChange={e => { const file = e.target.files?.[0]; if (file) onFile(file); e.target.value = ''; }} />
+        </label>
+        {value && <button type="button" onClick={onClear} className="rounded-lg border border-gray-200 p-2 text-gray-400 hover:text-red-500 dark:border-gray-700" title={`Supprimer ${label}`}><Trash2 size={15} /></button>}
+      </div>
+    </div>
+  );
+}
+
 function Field({ label, className = '', ...props }) {
-  return (
-    <label className={`block ${className}`}>
-      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{label}</span>
-      <input {...props} className="mt-1.5 w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-950 px-3 py-2.5 text-sm text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-primary/30" />
-    </label>
-  );
+  return <label className={`block ${className}`}><span className="text-sm font-medium text-gray-700 dark:text-gray-300">{label}</span><input {...props} className="mt-1.5 w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-950 px-3 py-2.5 text-sm text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-primary/30" /></label>;
 }
-
 function Textarea({ label, ...props }) {
-  return (
-    <label className="block">
-      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{label}</span>
-      <textarea {...props} className="mt-1.5 w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-950 px-3 py-2.5 text-sm text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-primary/30 resize-y" />
-    </label>
-  );
+  return <label className="block"><span className="text-sm font-medium text-gray-700 dark:text-gray-300">{label}</span><textarea {...props} className="mt-1.5 w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-950 px-3 py-2.5 text-sm text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-primary/30 resize-y" /></label>;
 }
-
 function Select({ label, options, ...props }) {
-  return (
-    <label className="block">
-      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{label}</span>
-      <select {...props} className="mt-1.5 w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-950 px-3 py-2.5 text-sm text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-primary/30">
-        {options.map(option => <option key={option} value={option}>{option === 'XOF' ? 'FCFA (XOF)' : option}</option>)}
-      </select>
-    </label>
-  );
+  return <label className="block"><span className="text-sm font-medium text-gray-700 dark:text-gray-300">{label}</span><select {...props} className="mt-1.5 w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-950 px-3 py-2.5 text-sm text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-primary/30">{options.map(option => <option key={option} value={option}>{option === 'XOF' ? 'FCFA (XOF)' : option}</option>)}</select></label>;
 }
