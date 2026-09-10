@@ -2,13 +2,13 @@ from decimal import Decimal
 from typing import Optional
 
 from fastapi import APIRouter, Depends
-from pydantic import BaseModel, EmailStr, Field
-from sqlalchemy import text
+from pydantic import BaseModel, Field
+from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..core.deps import get_current_user
 from ..database import get_db
-from ..models.user import User
+from ..models.user import User, Workspace
 
 router = APIRouter(prefix='/erp/company-profile', tags=['ERP Company Profile'])
 
@@ -19,7 +19,7 @@ class CompanyProfileBody(BaseModel):
     country: Optional[str] = None
     currency: str = Field(default='XOF', pattern='^(XOF|EUR|USD)$')
     phone: Optional[str] = None
-    email: Optional[EmailStr] = None
+    email: Optional[str] = None
     address: Optional[str] = None
     rccm: Optional[str] = None
     ifu: Optional[str] = None
@@ -44,10 +44,16 @@ async def get_company_profile(
     row = result.mappings().first()
     if row:
         return dict(row)
+
+    workspace_result = await db.execute(
+        select(Workspace.name).where(Workspace.id == current_user.workspace_id)
+    )
+    workspace_name = workspace_result.scalar_one_or_none()
+
     return {
         'workspace_id': current_user.workspace_id,
-        'legal_name': current_user.workspace.name if current_user.workspace else None,
-        'trade_name': current_user.workspace.name if current_user.workspace else None,
+        'legal_name': workspace_name,
+        'trade_name': workspace_name,
         'country': None,
         'currency': 'XOF',
         'phone': None,
