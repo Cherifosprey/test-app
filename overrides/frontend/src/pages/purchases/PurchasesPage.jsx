@@ -1,14 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Plus, Truck, ShoppingBag, Trash2 } from 'lucide-react';
+import { Plus, Truck, ShoppingBag, Trash2, PackageCheck } from 'lucide-react';
 import api from '../../api/client.js';
 import { formatCurrency } from '../../utils/currency.js';
 
 const EMPTY_SUPPLIER = { name: '', phone: '', email: '', address: '', tax_id: '' };
-const EMPTY_LINE = { description: '', quantity: 1, unit_price: 0, tax_rate: 0 };
+const EMPTY_LINE = { product_id: '', description: '', quantity: 1, unit_price: 0, tax_rate: 0 };
 
 export default function PurchasesPage() {
   const [suppliers, setSuppliers] = useState([]);
   const [orders, setOrders] = useState([]);
+  const [products, setProducts] = useState([]);
   const [showSupplier, setShowSupplier] = useState(false);
   const [showOrder, setShowOrder] = useState(false);
   const [supplierForm, setSupplierForm] = useState(EMPTY_SUPPLIER);
@@ -16,12 +17,14 @@ export default function PurchasesPage() {
   const [saving, setSaving] = useState(false);
 
   const load = async () => {
-    const [suppliersRes, ordersRes] = await Promise.all([
+    const [suppliersRes, ordersRes, productsRes] = await Promise.all([
       api.get('/erp/purchases/suppliers'),
       api.get('/erp/purchases/orders'),
+      api.get('/inventory/products').catch(() => ({ data: [] })),
     ]);
     setSuppliers(suppliersRes.data || []);
     setOrders(ordersRes.data || []);
+    setProducts(productsRes.data || []);
   };
 
   useEffect(() => { load(); }, []);
@@ -59,7 +62,7 @@ export default function PurchasesPage() {
           quantity: Number(line.quantity),
           unit_price: Number(line.unit_price),
           tax_rate: Number(line.tax_rate || 0),
-          product_id: null,
+          product_id: line.product_id ? Number(line.product_id) : null,
         })),
       });
       setOrderForm({ supplier_id: '', currency: 'XOF', notes: '', lines: [{ ...EMPTY_LINE }] });
@@ -82,6 +85,19 @@ export default function PurchasesPage() {
     }));
   };
 
+  const chooseProduct = (index, value) => {
+    const product = products.find(item => String(item.id) === String(value));
+    setOrderForm(prev => ({
+      ...prev,
+      lines: prev.lines.map((line, i) => i === index ? {
+        ...line,
+        product_id: value,
+        description: product?.name || line.description,
+        unit_price: product?.cost_price ?? line.unit_price,
+      } : line),
+    }));
+  };
+
   const addLine = () => setOrderForm(prev => ({ ...prev, lines: [...prev.lines, { ...EMPTY_LINE }] }));
   const removeLine = index => setOrderForm(prev => ({
     ...prev,
@@ -93,7 +109,7 @@ export default function PurchasesPage() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Achats & Fournisseurs</h1>
-          <p className="mt-1 text-sm text-gray-500">Gérez vos fournisseurs et vos bons de commande.</p>
+          <p className="mt-1 text-sm text-gray-500">Gérez vos fournisseurs, bons de commande et réceptions en stock.</p>
         </div>
         <div className="flex gap-2">
           <button onClick={() => setShowSupplier(v => !v)} className="inline-flex items-center gap-2 rounded-lg border border-gray-200 dark:border-gray-700 px-3 py-2 text-sm font-medium">
@@ -139,12 +155,18 @@ export default function PurchasesPage() {
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[720px] text-sm">
-              <thead><tr className="border-b border-gray-100 dark:border-gray-800 text-left text-xs uppercase text-gray-500"><th className="py-2">Article / service</th><th>Qté</th><th>Prix unitaire</th><th>Taxe %</th><th></th></tr></thead>
+            <table className="w-full min-w-[920px] text-sm">
+              <thead><tr className="border-b border-gray-100 dark:border-gray-800 text-left text-xs uppercase text-gray-500"><th className="py-2">Produit stock</th><th>Description</th><th>Qté</th><th>Prix unitaire</th><th>Taxe %</th><th></th></tr></thead>
               <tbody>
                 {orderForm.lines.map((line, index) => (
                   <tr key={index} className="border-b border-gray-50 dark:border-gray-800/50">
-                    <td className="py-2 pr-2"><Field required placeholder="Description" value={line.description} onChange={e => setLine(index, 'description', e.target.value)} /></td>
+                    <td className="py-2 pr-2">
+                      <select value={line.product_id} onChange={e => chooseProduct(index, e.target.value)} className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-950 px-3 py-2.5 text-sm">
+                        <option value="">Non lié au stock</option>
+                        {products.map(product => <option key={product.id} value={product.id}>{product.name}{product.sku ? ` — ${product.sku}` : ''}</option>)}
+                      </select>
+                    </td>
+                    <td className="pr-2"><Field required placeholder="Description" value={line.description} onChange={e => setLine(index, 'description', e.target.value)} /></td>
                     <td className="pr-2"><Field required type="number" min="0.01" step="0.01" value={line.quantity} onChange={e => setLine(index, 'quantity', e.target.value)} /></td>
                     <td className="pr-2"><Field required type="number" min="0" step="0.01" value={line.unit_price} onChange={e => setLine(index, 'unit_price', e.target.value)} /></td>
                     <td className="pr-2"><Field type="number" min="0" max="100" step="0.01" value={line.tax_rate} onChange={e => setLine(index, 'tax_rate', e.target.value)} /></td>
@@ -154,6 +176,7 @@ export default function PurchasesPage() {
               </tbody>
             </table>
           </div>
+          <p className="text-xs text-gray-500">Les lignes liées à un produit augmentent automatiquement son stock lorsque le bon passe au statut « Reçu ».</p>
           <button type="button" onClick={addLine} className="text-sm font-medium text-primary">+ Ajouter une ligne</button>
           <div className="flex items-center justify-between border-t border-gray-100 dark:border-gray-800 pt-4">
             <div className="text-sm text-gray-500">Total estimé <span className="ml-2 text-lg font-bold text-gray-900 dark:text-white">{formatCurrency(draftTotal, orderForm.currency)}</span></div>
@@ -174,7 +197,7 @@ export default function PurchasesPage() {
         <section className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5">
           <div className="flex items-center gap-2"><ShoppingBag size={18} className="text-primary" /><h2 className="font-semibold">Bons de commande</h2></div>
           <div className="mt-4 overflow-x-auto">
-            <table className="w-full min-w-[650px] text-sm">
+            <table className="w-full min-w-[700px] text-sm">
               <thead><tr className="border-b border-gray-100 dark:border-gray-800 text-left text-xs uppercase text-gray-500"><th className="py-2">N°</th><th>Fournisseur</th><th>Date</th><th>Total</th><th>Statut</th></tr></thead>
               <tbody>
                 {orders.map(order => (
@@ -184,9 +207,13 @@ export default function PurchasesPage() {
                     <td>{String(order.order_date)}</td>
                     <td className="font-semibold">{formatCurrency(order.total_amount, order.currency)}</td>
                     <td>
-                      <select value={order.status} onChange={e => changeStatus(order.id, e.target.value)} className="rounded-md border border-gray-200 dark:border-gray-700 bg-transparent px-2 py-1 text-xs">
-                        <option value="draft">Brouillon</option><option value="ordered">Commandé</option><option value="received">Reçu</option><option value="cancelled">Annulé</option>
-                      </select>
+                      {order.stock_received ? (
+                        <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 dark:bg-emerald-950/30 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-300"><PackageCheck size={13} /> Reçu en stock</span>
+                      ) : (
+                        <select value={order.status} onChange={e => changeStatus(order.id, e.target.value)} className="rounded-md border border-gray-200 dark:border-gray-700 bg-transparent px-2 py-1 text-xs">
+                          <option value="draft">Brouillon</option><option value="ordered">Commandé</option><option value="received">Reçu</option><option value="cancelled">Annulé</option>
+                        </select>
+                      )}
                     </td>
                   </tr>
                 ))}
