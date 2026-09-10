@@ -11,6 +11,7 @@ if (-not (Test-Path "upstream/backend/.git")) {
 }
 
 python scripts/apply_customizations.py
+python scripts/apply_supplier_finance.py
 
 if (-not (Test-Path "upstream/frontend/.env.local")) {
   Copy-Item "custom/frontend.env.example" "upstream/frontend/.env.local"
