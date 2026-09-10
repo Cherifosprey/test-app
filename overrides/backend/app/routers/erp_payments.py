@@ -1,10 +1,11 @@
+import json
 from datetime import date
 from decimal import Decimal
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
-from sqlalchemy import func, select, text
+from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..core.accounting_seed import get_account_by_code, seed_accounts_if_empty
@@ -32,7 +33,11 @@ async def _require_invoices(current_user: User, db: AsyncSession) -> None:
         select(Workspace.enabled_modules).where(Workspace.id == current_user.workspace_id)
     )
     raw_modules = result.scalar_one_or_none() or '[]'
-    if '"invoices"' not in raw_modules and 'invoices' not in raw_modules:
+    try:
+        modules = json.loads(raw_modules)
+    except (TypeError, json.JSONDecodeError):
+        modules = []
+    if 'invoices' not in modules:
         raise HTTPException(403, 'Invoices module is not enabled for this workspace')
 
 
@@ -150,9 +155,11 @@ async def record_invoice_payment(
         raise HTTPException(409, f'Cannot record payment for invoice status {invoice.status}')
 
     paid_result = await db.execute(
-        select(func.coalesce(func.sum(text('amount')), 0)).select_from(text('erp_invoice_payments')).where(
-            text('invoice_id = :invoice_id AND workspace_id = :workspace_id')
-        ),
+        text('''
+            SELECT COALESCE(SUM(amount), 0)
+            FROM erp_invoice_payments
+            WHERE invoice_id = :invoice_id AND workspace_id = :workspace_id
+        '''),
         {'invoice_id': invoice_id, 'workspace_id': current_user.workspace_id},
     )
     already_paid = Decimal(str(paid_result.scalar_one() or 0))
