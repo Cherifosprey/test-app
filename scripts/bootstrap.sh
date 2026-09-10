@@ -11,5 +11,9 @@ if [ ! -d upstream/backend/.git ]; then
   git clone https://github.com/simple-softwares/simplesoft-backend.git upstream/backend
 fi
 
-echo "SimpleSoft frontend/backend récupérés dans upstream/."
-echo "Travaillez ensuite sur les personnalisations ERP dans custom/."
+python3 scripts/apply_customizations.py
+
+echo ""
+echo "ERP V1 prêt dans upstream/frontend et upstream/backend."
+echo "Frontend : cd upstream/frontend && npm install && npm run dev"
+echo "Backend  : cd upstream/backend && python -m venv .venv && pip install -r requirements.txt"
