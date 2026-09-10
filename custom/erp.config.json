@@ -7,9 +7,9 @@
   },
   "plans": {
     "starter": ["projects", "tasks", "contacts", "crm", "quotations", "sales", "invoices"],
-    "business": ["projects", "tasks", "contacts", "crm", "quotations", "sales", "invoices", "products", "inventory", "expenses", "accounting"],
-    "pro": ["projects", "tasks", "notes", "contacts", "chat", "files", "team", "invoices", "quotations", "accounting", "products", "calendar", "hr", "attendance", "crm", "sales", "expenses", "inventory", "performance", "automation", "helpdesk"],
-    "enterprise": ["projects", "tasks", "notes", "contacts", "chat", "files", "team", "invoices", "quotations", "accounting", "products", "calendar", "hr", "attendance", "crm", "sales", "expenses", "inventory", "performance", "automation", "helpdesk"]
+    "business": ["projects", "tasks", "contacts", "crm", "quotations", "sales", "invoices", "products", "purchases", "inventory", "expenses", "accounting"],
+    "pro": ["projects", "tasks", "notes", "contacts", "chat", "files", "team", "invoices", "quotations", "accounting", "products", "purchases", "calendar", "hr", "attendance", "crm", "sales", "expenses", "inventory", "performance", "automation", "helpdesk"],
+    "enterprise": ["projects", "tasks", "notes", "contacts", "chat", "files", "team", "invoices", "quotations", "accounting", "products", "purchases", "calendar", "hr", "attendance", "crm", "sales", "expenses", "inventory", "performance", "automation", "helpdesk"]
   },
   "companyFields": [
     "legalName",
