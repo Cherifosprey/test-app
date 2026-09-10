@@ -19,22 +19,25 @@
 
 ## Phase 2 — Commerce complet
 
-- [ ] fournisseurs
+- [x] fournisseurs
 - [ ] demandes d’achat
-- [ ] bons de commande fournisseur
-- [ ] réceptions fournisseurs
+- [x] bons de commande fournisseur
+- [x] réceptions fournisseurs
 - [ ] factures fournisseurs
 - [ ] règlements fournisseurs
-- [ ] lien automatique achats → stock → comptabilité
-- [ ] paiements clients avec historique et solde
+- [x] lien automatique achats → stock
+- [ ] comptabilisation automatique des achats fournisseurs
+- [x] paiements clients avec historique, règlements partiels et solde
+- [x] modes Espèces / Virement / Mobile Money / Carte / Chèque / Autre
+- [x] écriture comptable automatique des règlements clients
 - [ ] avoirs et remboursements
 
 ## Phase 3 — Afrique francophone / multi-pays
 
 - [ ] remplacer les écrans GST spécifiques à l’Inde par une fiscalité configurable
 - [ ] modèles de facture adaptés par pays
-- [ ] devise et formats régionaux par workspace
-- [ ] paiements Mobile Money via fournisseurs configurables
+- [ ] devise et formats régionaux par workspace dans tous les écrans existants
+- [ ] connexion à un fournisseur Mobile Money réel
 - [ ] WhatsApp pour devis, facture et relance
 - [ ] traduction complète de toutes les pages SimpleSoft
 
