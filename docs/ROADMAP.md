@@ -23,10 +23,10 @@
 - [ ] demandes d’achat
 - [x] bons de commande fournisseur
 - [x] réceptions fournisseurs
-- [ ] factures fournisseurs
-- [ ] règlements fournisseurs
+- [x] factures fournisseurs
+- [x] règlements fournisseurs
 - [x] lien automatique achats → stock
-- [ ] comptabilisation automatique des achats fournisseurs
+- [x] comptabilisation automatique des factures et règlements fournisseurs
 - [x] paiements clients avec historique, règlements partiels et solde
 - [x] modes Espèces / Virement / Mobile Money / Carte / Chèque / Autre
 - [x] écriture comptable automatique des règlements clients
