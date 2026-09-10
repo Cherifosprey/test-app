@@ -61,10 +61,27 @@ CREATE TABLE IF NOT EXISTS erp_purchase_orders (
 )
 """
 
+CREATE_INVOICE_PAYMENTS_TABLE = """
+CREATE TABLE IF NOT EXISTS erp_invoice_payments (
+    id SERIAL PRIMARY KEY,
+    workspace_id INTEGER NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
+    invoice_id INTEGER NOT NULL REFERENCES invoices(id) ON DELETE CASCADE,
+    payment_date DATE NOT NULL DEFAULT CURRENT_DATE,
+    amount NUMERIC(14,2) NOT NULL,
+    method VARCHAR(32) NOT NULL DEFAULT 'cash',
+    reference VARCHAR(128),
+    notes TEXT,
+    created_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    created_at TIMESTAMP DEFAULT NOW()
+)
+"""
+
 CREATE_INDEXES = [
     "CREATE INDEX IF NOT EXISTS idx_erp_suppliers_workspace ON erp_suppliers(workspace_id)",
     "CREATE INDEX IF NOT EXISTS idx_erp_purchase_orders_workspace ON erp_purchase_orders(workspace_id)",
     "CREATE INDEX IF NOT EXISTS idx_erp_purchase_orders_supplier ON erp_purchase_orders(supplier_id)",
+    "CREATE INDEX IF NOT EXISTS idx_erp_invoice_payments_workspace ON erp_invoice_payments(workspace_id)",
+    "CREATE INDEX IF NOT EXISTS idx_erp_invoice_payments_invoice ON erp_invoice_payments(invoice_id)",
 ]
 
 ERP_SCHEMA_UPGRADES = [
@@ -77,6 +94,7 @@ async def ensure_erp_schema() -> None:
         await conn.execute(text(CREATE_COMPANY_PROFILE_TABLE))
         await conn.execute(text(CREATE_SUPPLIERS_TABLE))
         await conn.execute(text(CREATE_PURCHASE_ORDERS_TABLE))
+        await conn.execute(text(CREATE_INVOICE_PAYMENTS_TABLE))
         for statement in ERP_SCHEMA_UPGRADES:
             await conn.execute(text(statement))
         for statement in CREATE_INDEXES:
