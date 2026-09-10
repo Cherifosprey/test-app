@@ -34,11 +34,14 @@
 
 ## Phase 3 — Afrique francophone / multi-pays
 
-- [ ] remplacer les écrans GST spécifiques à l’Inde par une fiscalité configurable
-- [ ] modèles de facture adaptés par pays
-- [ ] devise et formats régionaux par workspace dans tous les écrans existants
+- [x] fiche fiscale générique par entreprise : taxe, taux, HT/TTC, exonération, devise et locale
+- [x] formulaire, détail et impression des factures clients multi-pays
+- [x] formulaire, détail et impression des devis multi-pays
+- [x] ancien menu GST retiré et route `/gst` redirigée vers les paramètres multi-pays
+- [ ] neutraliser les dernières dépendances GST internes du backend/comptabilité
+- [ ] devise et formats régionaux par workspace dans tous les anciens écrans SimpleSoft
 - [ ] connexion à un fournisseur Mobile Money réel
-- [ ] WhatsApp pour devis, facture et relance
+- [ ] WhatsApp pour devis, facture et relance avec devise/configuration entreprise
 - [ ] traduction complète de toutes les pages SimpleSoft
 
 ## Phase 4 — White-label avancé
