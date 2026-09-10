@@ -11,13 +11,15 @@ Ce dépôt transforme les projets open source SimpleSoft en une base ERP tout-en
 - activation/désactivation des modules par entreprise
 - offres Starter / Business / Pro / Enterprise
 - écran Super Admin **Offres ERP** pour appliquer une formule à une entreprise
-- profil entreprise multi-pays : raison sociale, nom commercial, pays, téléphone, email et adresse
+- profil entreprise multi-pays : raison sociale, nom commercial, pays, langue/format, téléphone, email et adresse
 - informations légales : RCCM, IFU, NIF et identifiant fiscal générique
-- taxe par défaut et préfixe de facture
+- fiscalité configurable : nom de taxe, taux par défaut, prix HT/TTC, libellé fiscal, exonération et pied de facture
 - logo, signature et cachet par entreprise (URL en V1)
 - module **Achats & Fournisseurs** : fournisseurs, bons de commande et statuts
 - liaison d’une ligne d’achat avec un produit du stock
 - réception fournisseur qui augmente automatiquement le stock une seule fois
+- factures fournisseurs avec dette comptable, échéance et solde
+- règlements fournisseurs partiels/complets avec historique et écriture comptable
 - module **Paiements clients** : paiements complets ou partiels, soldes et historique
 - modes Espèces, Virement, Mobile Money, Carte, Chèque et Autre
 - écriture comptable automatique à chaque règlement client
@@ -32,7 +34,8 @@ Le code SimpleSoft reste récupéré depuis les dépôts upstream afin de facili
 - `upstream/backend` → `simple-softwares/simplesoft-backend`
 - `overrides/frontend` → fichiers personnalisés injectés dans le frontend
 - `overrides/backend` → fichiers personnalisés injectés dans le backend
-- `scripts/apply_customizations.py` → applique automatiquement les modifications
+- `scripts/apply_customizations.py` → applique les personnalisations principales
+- `scripts/apply_supplier_finance.py` → branche les écrans et routes de finance fournisseur
 - `custom/` → configuration générale et modèles `.env`
 
 ## Installation locale
@@ -90,12 +93,12 @@ npm run dev
 ## Offres V1
 
 - **Starter** : projets, tâches, contacts, CRM, devis, ventes, factures et paiements clients
-- **Business** : Starter + produits, achats/fournisseurs, stock, dépenses et comptabilité
+- **Business** : Starter + produits, achats/fournisseurs, factures et règlements fournisseurs, stock, dépenses et comptabilité
 - **Pro** : Business + documents, équipe, calendrier, RH, présences, performance, automatisation et SAV
 - **Enterprise** : tous les modules disponibles
 
 ## Prochaines briques
 
-Voir `docs/ROADMAP.md` pour l’avancement. Les prochaines priorités sont la facturation fournisseur, la fiscalité multi-pays, les uploads de logo/cachet/signature, les modèles de facture, la traduction complète, les sauvegardes et le déploiement multi-clients.
+Voir `docs/ROADMAP.md` pour l’avancement. Les prochaines priorités sont l’adaptation complète des factures clients à la fiscalité multi-pays, les avoirs/remboursements, les uploads de logo/cachet/signature, les modèles PDF, la traduction complète, les sauvegardes et le déploiement multi-clients.
 
 > Avant une commercialisation publique, la licence applicable au backend SimpleSoft doit être confirmée précisément.
