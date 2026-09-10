@@ -12,6 +12,7 @@ if [ ! -d upstream/backend/.git ]; then
 fi
 
 python3 scripts/apply_customizations.py
+python3 scripts/apply_supplier_finance.py
 
 if [ ! -f upstream/frontend/.env.local ]; then
   cp custom/frontend.env.example upstream/frontend/.env.local
