@@ -1,18 +1,19 @@
 {
   "brand": {
-    "name": "Mon ERP",
-    "defaultLocale": "fr",
+    "name": "ERP Suite",
+    "defaultLocale": "fr-FR",
     "defaultCurrency": "XOF",
     "supportedCurrencies": ["XOF", "EUR", "USD"]
   },
   "plans": {
-    "starter": ["crm", "sales", "invoicing"],
-    "business": ["crm", "sales", "purchases", "inventory", "invoicing", "finance"],
-    "pro": ["crm", "sales", "purchases", "inventory", "invoicing", "finance", "hr", "projects", "helpdesk"],
-    "enterprise": ["*"]
+    "starter": ["projects", "tasks", "contacts", "crm", "quotations", "sales", "invoices"],
+    "business": ["projects", "tasks", "contacts", "crm", "quotations", "sales", "invoices", "products", "inventory", "expenses", "accounting"],
+    "pro": ["projects", "tasks", "notes", "contacts", "chat", "files", "team", "invoices", "quotations", "accounting", "products", "calendar", "hr", "attendance", "crm", "sales", "expenses", "inventory", "performance", "automation", "helpdesk"],
+    "enterprise": ["projects", "tasks", "notes", "contacts", "chat", "files", "team", "invoices", "quotations", "accounting", "products", "calendar", "hr", "attendance", "crm", "sales", "expenses", "inventory", "performance", "automation", "helpdesk"]
   },
   "companyFields": [
-    "name",
+    "legalName",
+    "tradeName",
     "logo",
     "phone",
     "email",
@@ -21,8 +22,9 @@
     "rccm",
     "ifu",
     "nif",
+    "taxId",
     "currency",
-    "taxRate",
+    "defaultTaxRate",
     "invoicePrefix",
     "signature",
     "stamp"
