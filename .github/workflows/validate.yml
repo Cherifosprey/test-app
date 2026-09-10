@@ -15,13 +15,14 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
 
       - name: Validate customization sources
         run: |
           python -m py_compile scripts/apply_customizations.py
           python -m py_compile scripts/apply_supplier_finance.py
           python -m json.tool custom/erp.config.json > /dev/null
+          test -f overrides/frontend/index.html
           test -f overrides/frontend/src/config/erpConfig.js
           test -f overrides/frontend/src/utils/currency.js
           test -f overrides/frontend/src/components/PaywallOverlay.jsx
@@ -30,6 +31,9 @@ jobs:
           test -f overrides/frontend/src/pages/purchases/PurchasesPage.jsx
           test -f overrides/frontend/src/pages/purchases/SupplierFinancePage.jsx
           test -f overrides/frontend/src/pages/payments/PaymentsPage.jsx
+          test -f overrides/frontend/src/pages/invoicing/InvoiceFormPage.jsx
+          test -f overrides/frontend/src/pages/invoicing/InvoiceDetailPage.jsx
+          test -f overrides/frontend/src/pages/invoicing/InvoicePrintPage.jsx
           test -f overrides/backend/app/core/erp_settings.py
           test -f overrides/backend/app/core/erp_schema.py
           test -f overrides/backend/app/routers/erp_admin.py
@@ -77,6 +81,9 @@ jobs:
           check "label: 'Paiements'" upstream/frontend/src/components/layout/Sidebar.jsx
           check "label: 'Dettes fournisseurs'" upstream/frontend/src/components/layout/Sidebar.jsx
           check '"purchases"' upstream/backend/app/routers/admin_workspaces.py
+          check "Fiscalité multi-pays" upstream/frontend/src/pages/settings/CompanySettingsPage.jsx
+          check "FACTURE" upstream/frontend/src/pages/invoicing/InvoicePrintPage.jsx
+          check "tax_name" upstream/frontend/src/pages/invoicing/InvoiceFormPage.jsx
 
       - name: Build patched frontend
         working-directory: upstream/frontend
