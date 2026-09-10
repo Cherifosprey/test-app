@@ -13,6 +13,7 @@ fi
 
 python3 scripts/apply_customizations.py
 python3 scripts/apply_supplier_finance.py
+python3 scripts/apply_multicountry.py
 
 if [ ! -f upstream/frontend/.env.local ]; then
   cp custom/frontend.env.example upstream/frontend/.env.local
