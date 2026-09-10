@@ -76,6 +76,58 @@ def patch_sidebar() -> None:
     print(f'patched: {path.relative_to(ROOT)}')
 
 
+def patch_admin_layout() -> None:
+    path = UPSTREAM / 'frontend/src/pages/admin/AdminLayout.jsx'
+    if not path.exists():
+        return
+    text = path.read_text(encoding='utf-8')
+
+    text = text.replace(
+        'LayoutDashboard, Building2, Users, CreditCard, Tag,',
+        'LayoutDashboard, Building2, Users, CreditCard, Tag, Layers,',
+        1,
+    )
+    if "'/admin/erp-plans'" not in text:
+        anchor = "  { to: '/admin/pricing',    label: 'Pricing',     icon: Tag },"
+        addition = anchor + "\n  { to: '/admin/erp-plans',  label: 'Offres ERP',  icon: Layers },"
+        text = text.replace(anchor, addition, 1)
+
+    replacements = {
+        "label: 'Dashboard'": "label: 'Tableau de bord'",
+        "label: 'Workspaces'": "label: 'Entreprises'",
+        "label: 'Users'": "label: 'Utilisateurs'",
+        "label: 'Pricing'": "label: 'Tarifs'",
+        "label: 'Billing'": "label: 'Facturation'",
+        '>Infrastructure</p>': '>Gestion de la plateforme</p>',
+        '>Admin Panel</span>': '>Administration ERP</span>',
+        'title="Logout"': 'title="Déconnexion"',
+    }
+    for old, new in replacements.items():
+        text = text.replace(old, new)
+
+    path.write_text(text, encoding='utf-8')
+    print(f'patched: {path.relative_to(ROOT)}')
+
+
+def patch_frontend_router() -> None:
+    path = UPSTREAM / 'frontend/src/router/index.jsx'
+    if not path.exists():
+        return
+    text = path.read_text(encoding='utf-8')
+
+    if "ERPPlansPage" not in text:
+        anchor = "import PricingPage from '../pages/admin/PricingPage.jsx';"
+        text = text.replace(anchor, anchor + "\nimport ERPPlansPage from '../pages/admin/ERPPlansPage.jsx';", 1)
+
+    route = "      { path: 'erp-plans', element: <ERPPlansPage /> },"
+    if route not in text:
+        anchor = "      { path: 'pricing', element: <PricingPage /> },"
+        text = text.replace(anchor, anchor + '\n' + route, 1)
+
+    path.write_text(text, encoding='utf-8')
+    print(f'patched: {path.relative_to(ROOT)}')
+
+
 def patch_frontend_title() -> None:
     path = UPSTREAM / 'frontend/index.html'
     if not path.exists():
@@ -126,6 +178,8 @@ def main() -> None:
     copy_tree(OVERRIDES / 'frontend', frontend)
     copy_tree(OVERRIDES / 'backend', backend)
     patch_sidebar()
+    patch_admin_layout()
+    patch_frontend_router()
     patch_frontend_title()
     patch_backend_main()
     patch_backend_env()
