@@ -13,7 +13,16 @@ fi
 
 python3 scripts/apply_customizations.py
 
+if [ ! -f upstream/frontend/.env.local ]; then
+  cp custom/frontend.env.example upstream/frontend/.env.local
+fi
+
+if [ ! -f upstream/backend/.env ]; then
+  cp custom/backend.env.example upstream/backend/.env
+fi
+
 echo ""
 echo "ERP V1 prêt dans upstream/frontend et upstream/backend."
-echo "Frontend : cd upstream/frontend && npm install && npm run dev"
-echo "Backend  : cd upstream/backend && python -m venv .venv && pip install -r requirements.txt"
+echo "1. Infrastructure : docker compose -f docker-compose.infrastructure.yml up -d"
+echo "2. Backend        : cd upstream/backend && python -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt && uvicorn app.main:app --reload"
+echo "3. Frontend       : cd upstream/frontend && npm install && npm run dev"
