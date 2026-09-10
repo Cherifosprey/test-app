@@ -53,6 +53,7 @@ CREATE TABLE IF NOT EXISTS erp_purchase_orders (
     total_amount NUMERIC(14,2) NOT NULL DEFAULT 0,
     line_items TEXT NOT NULL DEFAULT '[]',
     notes TEXT,
+    stock_received BOOLEAN NOT NULL DEFAULT FALSE,
     created_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
     created_at TIMESTAMP DEFAULT NOW(),
     updated_at TIMESTAMP DEFAULT NOW(),
@@ -66,11 +67,17 @@ CREATE_INDEXES = [
     "CREATE INDEX IF NOT EXISTS idx_erp_purchase_orders_supplier ON erp_purchase_orders(supplier_id)",
 ]
 
+ERP_SCHEMA_UPGRADES = [
+    "ALTER TABLE erp_purchase_orders ADD COLUMN IF NOT EXISTS stock_received BOOLEAN NOT NULL DEFAULT FALSE",
+]
+
 
 async def ensure_erp_schema() -> None:
     async with engine.begin() as conn:
         await conn.execute(text(CREATE_COMPANY_PROFILE_TABLE))
         await conn.execute(text(CREATE_SUPPLIERS_TABLE))
         await conn.execute(text(CREATE_PURCHASE_ORDERS_TABLE))
+        for statement in ERP_SCHEMA_UPGRADES:
+            await conn.execute(text(statement))
         for statement in CREATE_INDEXES:
             await conn.execute(text(statement))
