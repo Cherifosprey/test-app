@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..core.deps import get_current_user
 from ..database import get_db
+from ..models.product import Product, StockMovement
 from ..models.user import User, Workspace
 
 router = APIRouter(prefix='/erp/purchases', tags=['ERP Purchases'])
@@ -118,7 +119,8 @@ async def list_purchase_orders(
         text('''
             SELECT po.id, po.po_number, po.order_date, po.status, po.currency,
                    po.subtotal, po.tax_amount, po.total_amount, po.line_items,
-                   po.notes, po.created_at, s.id AS supplier_id, s.name AS supplier_name
+                   po.notes, po.stock_received, po.created_at,
+                   s.id AS supplier_id, s.name AS supplier_name
             FROM erp_purchase_orders po
             LEFT JOIN erp_suppliers s ON s.id = po.supplier_id
             WHERE po.workspace_id = :workspace_id
@@ -173,7 +175,7 @@ async def create_purchase_order(
                 :subtotal, :tax_amount, :total_amount, :line_items, :notes, :created_by
             )
             RETURNING id, po_number, order_date, status, currency, subtotal,
-                      tax_amount, total_amount, line_items, notes, created_at
+                      tax_amount, total_amount, line_items, notes, stock_received, created_at
         '''),
         {
             'workspace_id': current_user.workspace_id,
@@ -204,21 +206,73 @@ async def update_purchase_order_status(
     db: AsyncSession = Depends(get_db),
 ):
     await _require_purchases(current_user, db)
-    result = await db.execute(
+
+    order_result = await db.execute(
+        text('''
+            SELECT id, po_number, status, line_items, stock_received
+            FROM erp_purchase_orders
+            WHERE id = :order_id AND workspace_id = :workspace_id
+            FOR UPDATE
+        '''),
+        {'order_id': order_id, 'workspace_id': current_user.workspace_id},
+    )
+    order = order_result.mappings().first()
+    if not order:
+        raise HTTPException(404, 'Purchase order not found')
+
+    if order['stock_received'] and body.status != 'received':
+        raise HTTPException(400, 'A received purchase order cannot be moved back to another status')
+
+    stock_received = bool(order['stock_received'])
+    if body.status == 'received' and not stock_received:
+        try:
+            lines = json.loads(order['line_items'] or '[]')
+        except (TypeError, json.JSONDecodeError):
+            lines = []
+
+        for line in lines:
+            product_id = line.get('product_id')
+            if not product_id:
+                continue
+            quantity = Decimal(str(line.get('quantity') or 0))
+            if quantity <= 0:
+                continue
+
+            product_result = await db.execute(
+                select(Product).where(
+                    Product.id == product_id,
+                    Product.workspace_id == current_user.workspace_id,
+                ).with_for_update()
+            )
+            product = product_result.scalar_one_or_none()
+            if not product:
+                raise HTTPException(400, f'Linked product {product_id} was not found')
+
+            product.current_stock = Decimal(str(product.current_stock or 0)) + quantity
+            db.add(StockMovement(
+                workspace_id=current_user.workspace_id,
+                product_id=product.id,
+                movement_type='in',
+                quantity=quantity,
+                reference=order['po_number'],
+                notes='Réception fournisseur',
+                moved_by=current_user.id,
+            ))
+        stock_received = True
+
+    update_result = await db.execute(
         text('''
             UPDATE erp_purchase_orders
-            SET status = :status, updated_at = NOW()
+            SET status = :status, stock_received = :stock_received, updated_at = NOW()
             WHERE id = :order_id AND workspace_id = :workspace_id
-            RETURNING id, po_number, status
+            RETURNING id, po_number, status, stock_received
         '''),
         {
             'status': body.status,
+            'stock_received': stock_received,
             'order_id': order_id,
             'workspace_id': current_user.workspace_id,
         },
     )
-    row = result.mappings().first()
-    if not row:
-        raise HTTPException(404, 'Purchase order not found')
     await db.commit()
-    return dict(row)
+    return dict(update_result.mappings().one())
