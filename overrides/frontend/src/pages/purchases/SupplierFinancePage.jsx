@@ -48,9 +48,8 @@ export default function SupplierFinancePage() {
 
   useEffect(() => { load(); }, []);
 
-  const openBalance = useMemo(() => invoices.reduce((sum, item) => sum + Number(item.balance || 0), 0), [invoices]);
-  const paidTotal = useMemo(() => payments.reduce((sum, item) => sum + Number(item.amount || 0), 0), [payments]);
-
+  const openBalance = useMemo(() => groupAmounts(invoices, 'balance'), [invoices]);
+  const paidTotal = useMemo(() => groupAmounts(payments, 'amount'), [payments]);
   const supplierOrders = orders.filter(order => String(order.supplier_id) === String(invoiceForm.supplier_id));
 
   const createInvoice = async e => {
@@ -111,8 +110,8 @@ export default function SupplierFinancePage() {
 
       <div className="grid gap-3 md:grid-cols-3">
         <Metric icon={FileText} label="Factures fournisseurs" value={String(invoices.length)} />
-        <Metric icon={Wallet} label="Solde à payer" value={formatCurrency(openBalance, 'XOF')} />
-        <Metric icon={CreditCard} label="Règlements enregistrés" value={formatCurrency(paidTotal, 'XOF')} />
+        <Metric icon={Wallet} label="Solde à payer" value={<CurrencyTotals totals={openBalance} />} />
+        <Metric icon={CreditCard} label="Règlements enregistrés" value={<CurrencyTotals totals={paidTotal} />} />
       </div>
 
       {showInvoice && (
@@ -161,12 +160,24 @@ export default function SupplierFinancePage() {
 
       <section className="rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900">
         <h2 className="font-semibold">Derniers règlements fournisseurs</h2>
-        <div className="mt-4 overflow-x-auto"><table className="w-full min-w-[650px] text-sm"><thead><tr className="border-b border-gray-100 text-left text-xs uppercase text-gray-500 dark:border-gray-800"><th className="py-2">Date</th><th>Fournisseur</th><th>Facture</th><th>Mode</th><th>Référence</th><th>Montant</th></tr></thead><tbody>{payments.map(item => <tr key={item.id} className="border-b border-gray-50 dark:border-gray-800/50"><td className="py-3">{item.payment_date}</td><td>{item.supplier_name}</td><td className="font-mono text-xs">{item.invoice_number}</td><td>{methodLabel(item.method)}</td><td>{item.reference || '—'}</td><td className="font-semibold">{formatCurrency(item.amount, 'XOF')}</td></tr>)}{!payments.length && <tr><td colSpan="6" className="py-8 text-center text-gray-400">Aucun règlement fournisseur.</td></tr>}</tbody></table></div>
+        <div className="mt-4 overflow-x-auto"><table className="w-full min-w-[650px] text-sm"><thead><tr className="border-b border-gray-100 text-left text-xs uppercase text-gray-500 dark:border-gray-800"><th className="py-2">Date</th><th>Fournisseur</th><th>Facture</th><th>Mode</th><th>Référence</th><th>Montant</th></tr></thead><tbody>{payments.map(item => <tr key={item.id} className="border-b border-gray-50 dark:border-gray-800/50"><td className="py-3">{item.payment_date}</td><td>{item.supplier_name}</td><td className="font-mono text-xs">{item.invoice_number}</td><td>{methodLabel(item.method)}</td><td>{item.reference || '—'}</td><td className="font-semibold">{formatCurrency(item.amount, item.currency || 'XOF')}</td></tr>)}{!payments.length && <tr><td colSpan="6" className="py-8 text-center text-gray-400">Aucun règlement fournisseur.</td></tr>}</tbody></table></div>
       </section>
     </div>
   );
 }
 
+function groupAmounts(items, amountKey) {
+  return items.reduce((totals, item) => {
+    const currency = item.currency || 'XOF';
+    totals[currency] = (totals[currency] || 0) + Number(item[amountKey] || 0);
+    return totals;
+  }, {});
+}
+function CurrencyTotals({ totals }) {
+  const rows = Object.entries(totals).filter(([, amount]) => Math.abs(amount) > 0.000001);
+  if (!rows.length) return <span>{formatCurrency(0, 'XOF')}</span>;
+  return <span className="flex flex-col gap-0.5">{rows.map(([currency, amount]) => <span key={currency}>{formatCurrency(amount, currency)}</span>)}</span>;
+}
 const control = 'mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/30 dark:border-gray-700 dark:bg-gray-950';
 function Label({ children }) { return <span className="text-xs font-semibold text-gray-500">{children}</span>; }
 function Input({ label, ...props }) { return <label className="block"><Label>{label}</Label><input {...props} className={control} /></label>; }
