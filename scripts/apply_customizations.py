@@ -51,6 +51,11 @@ def patch_sidebar() -> None:
         anchor = "      { to: '/products',  label: 'Products',  icon: Package, module: 'products' },"
         text = text.replace(anchor, anchor + '\n' + purchase_link, 1)
 
+    payment_link = "      { to: '/payments', label: 'Paiements', icon: CreditCard, module: 'invoices' },"
+    if payment_link not in text:
+        anchor = "      { to: '/invoices',   label: 'Invoices',   icon: FileText, module: 'invoices' },"
+        text = text.replace(anchor, anchor + '\n' + payment_link, 1)
+
     replacements = {
         "label: 'Operations'": "label: 'Opérations'",
         "label: 'Tasks'": "label: 'Tâches'",
@@ -150,17 +155,15 @@ def patch_frontend_router() -> None:
         return
     text = path.read_text(encoding='utf-8')
 
-    if 'ERPPlansPage' not in text:
-        anchor = "import PricingPage from '../pages/admin/PricingPage.jsx';"
-        text = text.replace(anchor, anchor + "\nimport ERPPlansPage from '../pages/admin/ERPPlansPage.jsx';", 1)
-
-    if 'CompanySettingsPage' not in text:
-        anchor = "import SettingsPage from '../pages/settings/SettingsPage.jsx';"
-        text = text.replace(anchor, anchor + "\nimport CompanySettingsPage from '../pages/settings/CompanySettingsPage.jsx';", 1)
-
-    if 'PurchasesPage' not in text:
-        anchor = "import ProductsPage from '../pages/products/ProductsPage.jsx';"
-        text = text.replace(anchor, anchor + "\nimport PurchasesPage from '../pages/purchases/PurchasesPage.jsx';", 1)
+    imports = [
+        ("import PricingPage from '../pages/admin/PricingPage.jsx';", "import ERPPlansPage from '../pages/admin/ERPPlansPage.jsx';", 'ERPPlansPage'),
+        ("import SettingsPage from '../pages/settings/SettingsPage.jsx';", "import CompanySettingsPage from '../pages/settings/CompanySettingsPage.jsx';", 'CompanySettingsPage'),
+        ("import ProductsPage from '../pages/products/ProductsPage.jsx';", "import PurchasesPage from '../pages/purchases/PurchasesPage.jsx';", 'PurchasesPage'),
+        ("import InvoicesPage from '../pages/invoicing/InvoicesPage.jsx';", "import PaymentsPage from '../pages/payments/PaymentsPage.jsx';", 'PaymentsPage'),
+    ]
+    for anchor, import_line, token in imports:
+        if token not in text:
+            text = text.replace(anchor, anchor + '\n' + import_line, 1)
 
     admin_route = "      { path: 'erp-plans', element: <ERPPlansPage /> },"
     if admin_route not in text:
@@ -176,6 +179,11 @@ def patch_frontend_router() -> None:
     if purchase_route not in text:
         anchor = "      { path: 'products',               element: gate('products',    <ProductsPage />) },"
         text = text.replace(anchor, anchor + '\n' + purchase_route, 1)
+
+    payment_route = "      { path: 'payments',               element: gate('invoices',    <PaymentsPage />) },"
+    if payment_route not in text:
+        anchor = "      { path: 'invoices',               element: gate('invoices',    <InvoicesPage />) },"
+        text = text.replace(anchor, anchor + '\n' + payment_route, 1)
 
     path.write_text(text, encoding='utf-8')
     print(f'patched: {path.relative_to(ROOT)}')
@@ -215,7 +223,7 @@ def patch_backend_main() -> None:
         anchor = 'from .core.config import settings'
         text = text.replace(anchor, anchor + '\n' + schema_import, 1)
 
-    text = patch_backend_router_imports(text, ['erp_admin', 'erp_company', 'erp_purchases'])
+    text = patch_backend_router_imports(text, ['erp_admin', 'erp_company', 'erp_purchases', 'erp_payments'])
 
     if 'await ensure_erp_schema()' not in text:
         text = text.replace('    await init_db()\n    yield', '    await init_db()\n    await ensure_erp_schema()\n    yield', 1)
@@ -224,14 +232,13 @@ def patch_backend_main() -> None:
         'app.include_router(erp_admin.router,          prefix="/api")',
         'app.include_router(erp_company.router,        prefix="/api")',
         'app.include_router(erp_purchases.router,      prefix="/api")',
+        'app.include_router(erp_payments.router,       prefix="/api")',
     ]
     anchor = 'app.include_router(admin_pricing.router,       prefix="/api")'
     for include in includes:
         if include not in text:
             text = text.replace(anchor, anchor + '\n' + include, 1)
-            anchor = include
-        else:
-            anchor = include
+        anchor = include
 
     path.write_text(text, encoding='utf-8')
     print(f'patched: {path.relative_to(ROOT)}')
