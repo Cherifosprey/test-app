@@ -1,0 +1,38 @@
+{
+  "brand": {
+    "name": "ERP Suite",
+    "defaultLocale": "fr-FR",
+    "defaultCurrency": "XOF",
+    "supportedCurrencies": ["XOF", "EUR", "USD"]
+  },
+  "plans": {
+    "starter": ["projects", "tasks", "contacts", "crm", "quotations", "sales", "invoices"],
+    "business": ["projects", "tasks", "contacts", "crm", "quotations", "sales", "invoices", "products", "purchases", "inventory", "expenses", "accounting"],
+    "pro": ["projects", "tasks", "notes", "contacts", "chat", "files", "team", "invoices", "quotations", "accounting", "products", "purchases", "calendar", "hr", "attendance", "crm", "sales", "expenses", "inventory", "performance", "automation", "helpdesk"],
+    "enterprise": ["projects", "tasks", "notes", "contacts", "chat", "files", "team", "invoices", "quotations", "accounting", "products", "purchases", "calendar", "hr", "attendance", "crm", "sales", "expenses", "inventory", "performance", "automation", "helpdesk"]
+  },
+  "companyFields": [
+    "legalName",
+    "tradeName",
+    "logo",
+    "phone",
+    "email",
+    "address",
+    "country",
+    "locale",
+    "rccm",
+    "ifu",
+    "nif",
+    "taxId",
+    "taxName",
+    "taxRegistrationLabel",
+    "defaultTaxRate",
+    "pricesIncludeTax",
+    "taxExemptionNote",
+    "currency",
+    "invoicePrefix",
+    "invoiceFooter",
+    "signature",
+    "stamp"
+  ]
+}

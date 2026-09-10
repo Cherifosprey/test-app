@@ -1,0 +1,112 @@
+name: Validate ERP customization
+
+on:
+  push:
+    branches: [erp-v1]
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Validate customization sources
+        run: |
+          python -m py_compile scripts/apply_customizations.py
+          python -m py_compile scripts/apply_supplier_finance.py
+          python -m py_compile scripts/apply_multicountry.py
+          python -m py_compile scripts/apply_credits.py
+          python -m json.tool custom/erp.config.json > /dev/null
+          test -f overrides/frontend/index.html
+          test -f overrides/frontend/src/config/erpConfig.js
+          test -f overrides/frontend/src/utils/currency.js
+          test -f overrides/frontend/src/components/PaywallOverlay.jsx
+          test -f overrides/frontend/src/pages/admin/ERPPlansPage.jsx
+          test -f overrides/frontend/src/pages/settings/CompanySettingsPage.jsx
+          test -f overrides/frontend/src/pages/purchases/PurchasesPage.jsx
+          test -f overrides/frontend/src/pages/purchases/SupplierFinancePage.jsx
+          test -f overrides/frontend/src/pages/payments/PaymentsPage.jsx
+          test -f overrides/frontend/src/pages/credits/CreditNotesPage.jsx
+          test -f overrides/frontend/src/pages/invoicing/InvoiceFormPage.jsx
+          test -f overrides/frontend/src/pages/invoicing/InvoiceDetailPage.jsx
+          test -f overrides/frontend/src/pages/invoicing/InvoicePrintPage.jsx
+          test -f overrides/frontend/src/pages/quotations/QuotationFormPage.jsx
+          test -f overrides/frontend/src/pages/quotations/QuotationDetailPage.jsx
+          test -f overrides/frontend/src/pages/quotations/QuotationPrintPage.jsx
+          test -f overrides/backend/app/core/erp_settings.py
+          test -f overrides/backend/app/core/erp_schema.py
+          test -f overrides/backend/app/routers/erp_admin.py
+          test -f overrides/backend/app/routers/erp_company.py
+          test -f overrides/backend/app/routers/erp_purchases.py
+          test -f overrides/backend/app/routers/erp_payments.py
+          test -f overrides/backend/app/routers/erp_supplier_finance.py
+          test -f overrides/backend/app/routers/erp_credits.py
+
+      - name: Clone SimpleSoft and apply ERP V1
+        run: bash scripts/bootstrap.sh
+
+      - name: Validate patched backend and routes
+        run: |
+          python -m py_compile upstream/backend/app/main.py
+          python -m py_compile upstream/backend/app/core/erp_settings.py
+          python -m py_compile upstream/backend/app/core/erp_schema.py
+          python -m py_compile upstream/backend/app/routers/erp_admin.py
+          python -m py_compile upstream/backend/app/routers/erp_company.py
+          python -m py_compile upstream/backend/app/routers/erp_purchases.py
+          python -m py_compile upstream/backend/app/routers/erp_payments.py
+          python -m py_compile upstream/backend/app/routers/erp_supplier_finance.py
+          python -m py_compile upstream/backend/app/routers/erp_credits.py
+
+          check() {
+            needle="$1"
+            file="$2"
+            if ! grep -Fq "$needle" "$file"; then
+              echo "Missing integration: $needle in $file"
+              exit 1
+            fi
+            echo "OK: $needle"
+          }
+
+          check "erp_admin.router" upstream/backend/app/main.py
+          check "erp_company.router" upstream/backend/app/main.py
+          check "erp_purchases.router" upstream/backend/app/main.py
+          check "erp_payments.router" upstream/backend/app/main.py
+          check "erp_supplier_finance.router" upstream/backend/app/main.py
+          check "erp_credits.router" upstream/backend/app/main.py
+          check "path: 'purchases'" upstream/frontend/src/router/index.jsx
+          check "PurchasesPage" upstream/frontend/src/router/index.jsx
+          check "path: 'payments'" upstream/frontend/src/router/index.jsx
+          check "PaymentsPage" upstream/frontend/src/router/index.jsx
+          check "path: 'credits'" upstream/frontend/src/router/index.jsx
+          check "CreditNotesPage" upstream/frontend/src/router/index.jsx
+          check "path: 'supplier-finance'" upstream/frontend/src/router/index.jsx
+          check "SupplierFinancePage" upstream/frontend/src/router/index.jsx
+          check "module: 'purchases'" upstream/frontend/src/components/layout/Sidebar.jsx
+          check "label: 'Paiements'" upstream/frontend/src/components/layout/Sidebar.jsx
+          check "label: 'Avoirs & remboursements'" upstream/frontend/src/components/layout/Sidebar.jsx
+          check "label: 'Dettes fournisseurs'" upstream/frontend/src/components/layout/Sidebar.jsx
+          check '"purchases"' upstream/backend/app/routers/admin_workspaces.py
+          check "Fiscalité multi-pays" upstream/frontend/src/pages/settings/CompanySettingsPage.jsx
+          check "FACTURE" upstream/frontend/src/pages/invoicing/InvoicePrintPage.jsx
+          check "tax_name" upstream/frontend/src/pages/invoicing/InvoiceFormPage.jsx
+          check "DEVIS" upstream/frontend/src/pages/quotations/QuotationPrintPage.jsx
+          check "tax_name" upstream/frontend/src/pages/quotations/QuotationFormPage.jsx
+          check "credited_amount" upstream/backend/app/routers/erp_payments.py
+          check "Navigate to=\"/company-settings\"" upstream/frontend/src/router/index.jsx
+          if grep -Fq "to: '/gst'" upstream/frontend/src/components/layout/Sidebar.jsx; then
+            echo "Legacy GST menu is still visible"
+            exit 1
+          fi
+
+      - name: Build patched frontend
+        working-directory: upstream/frontend
+        run: |
+          npm install --no-audit --no-fund
+          npm run build
