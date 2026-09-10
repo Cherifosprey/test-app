@@ -15,6 +15,12 @@ Ce dépôt transforme les projets open source SimpleSoft en une base ERP tout-en
 - informations légales : RCCM, IFU, NIF et identifiant fiscal générique
 - taxe par défaut et préfixe de facture
 - logo, signature et cachet par entreprise (URL en V1)
+- module **Achats & Fournisseurs** : fournisseurs, bons de commande et statuts
+- liaison d’une ligne d’achat avec un produit du stock
+- réception fournisseur qui augmente automatiquement le stock une seule fois
+- module **Paiements clients** : paiements complets ou partiels, soldes et historique
+- modes Espèces, Virement, Mobile Money, Carte, Chèque et Autre
+- écriture comptable automatique à chaque règlement client
 - PostgreSQL + Redis pour le développement local
 - validation GitHub Actions contre la version actuelle de SimpleSoft
 
@@ -83,13 +89,13 @@ npm run dev
 
 ## Offres V1
 
-- **Starter** : projets, tâches, contacts, CRM, devis, ventes et factures
-- **Business** : Starter + produits, stock, dépenses et comptabilité
+- **Starter** : projets, tâches, contacts, CRM, devis, ventes, factures et paiements clients
+- **Business** : Starter + produits, achats/fournisseurs, stock, dépenses et comptabilité
 - **Pro** : Business + documents, équipe, calendrier, RH, présences, performance, automatisation et SAV
 - **Enterprise** : tous les modules disponibles
 
 ## Prochaines briques
 
-Voir `docs/ROADMAP.md` pour l’avancement : achats/fournisseurs, paiements locaux, uploads de logo/cachet/signature, modèles de facture multi-pays, traduction complète, sauvegardes et déploiement multi-clients.
+Voir `docs/ROADMAP.md` pour l’avancement. Les prochaines priorités sont la facturation fournisseur, la fiscalité multi-pays, les uploads de logo/cachet/signature, les modèles de facture, la traduction complète, les sauvegardes et le déploiement multi-clients.
 
 > Avant une commercialisation publique, la licence applicable au backend SimpleSoft doit être confirmée précisément.
